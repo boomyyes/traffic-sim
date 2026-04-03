@@ -1,8 +1,6 @@
 package com.traffic.api;
 
 import com.traffic.model.RoadNetwork;
-import com.traffic.model.RoadSegment;
-import com.traffic.model.TrafficSignal;
 import com.traffic.model.Vehicle;
 
 import java.util.ArrayList;
@@ -25,9 +23,6 @@ public class SimulationStateDTO {
     public int busTruckCount;
 
     public List<VehicleDTO> vehicles;
-    public List<RoadDTO> roads;
-    public List<SignalDTO> signals;
-    public List<double[]> junctionZones;
 
     // ---- Nested DTOs ----
 
@@ -74,48 +69,7 @@ public class SimulationStateDTO {
         dto.avgSpeed = engine.getAverageSpeed();
 
         RoadNetwork network = engine.getRoadNetwork();
-
-        // Roads
-        dto.roads = new ArrayList<>();
-        if (network != null) {
-            dto.roadCount = network.getSegmentCount();
-            for (RoadSegment seg : network.getAllSegments()) {
-                RoadDTO r = new RoadDTO();
-                r.id = seg.getId();
-                r.startX = seg.getStartX();
-                r.startY = seg.getStartY();
-                r.endX = seg.getEndX();
-                r.endY = seg.getEndY();
-                r.width = seg.getWidth();
-                r.roadLength = seg.getLength();
-                r.stripCount = seg.getStripCount();
-                r.roadType = seg.getRoadType().name();
-                r.heading = seg.getHeading();
-                r.speedLimit = seg.getSpeedLimit();
-                dto.roads.add(r);
-            }
-
-            // Signals
-            dto.signals = new ArrayList<>();
-            for (TrafficSignal sig : network.getAllSignals()) {
-                SignalDTO s = new SignalDTO();
-                s.id = sig.getId();
-                s.roadSegmentId = sig.getRoadSegmentId();
-                s.stopLineY = sig.getStopLineY();
-                s.state = sig.getState().name();
-                dto.signals.add(s);
-            }
-
-            // Junction zones
-            dto.junctionZones = new ArrayList<>();
-            for (RoadNetwork.JunctionZone jz : network.getJunctionZones()) {
-                dto.junctionZones.add(new double[]{jz.minX(), jz.minY(), jz.maxX(), jz.maxY()});
-            }
-        } else {
-            dto.roadCount = 0;
-            dto.signals = new ArrayList<>();
-            dto.junctionZones = new ArrayList<>();
-        }
+        dto.roadCount = (network != null) ? network.getSegmentCount() : 0;
 
         // Vehicles
         dto.vehicles = new ArrayList<>();

@@ -78,7 +78,7 @@ public class VehicleAI {
                 break;
 
             case COMMITTED:
-                if (!nearJunction && pastStopLine) {
+                if ((!nearJunction && pastStopLine) || stateTimer > 5.0) {
                     transitionTo(State.CRUISING);
                 }
                 break;

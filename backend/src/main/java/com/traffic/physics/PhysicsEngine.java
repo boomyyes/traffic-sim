@@ -83,7 +83,9 @@ public class PhysicsEngine {
         }
 
         // 9. Apply junction braking LAST, so it overrides the minimum speed push
-        acceleration = Math.min(acceleration, acceleration + junctionBraking);
+        if (junctionBraking < 0) {
+            acceleration = Math.min(acceleration, junctionBraking);
+        }
 
         // 10. Clamp
         acceleration = Math.max(-vehicle.getType().getMaxAcceleration() * 2,

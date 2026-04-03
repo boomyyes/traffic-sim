@@ -38,6 +38,7 @@ public class SimulationEngine {
 
     private long tickCount = 0;
     private int spawnAccumulator = 0;
+    private double emaAverageSpeed = 0;
 
     // Indian traffic mix: ~50% bikes, 15% autos, 20% cars, 10% buses, 5% trucks
     private static final VehicleType[] SPAWN_DISTRIBUTION = {
@@ -140,6 +141,13 @@ public class SimulationEngine {
 
         // 9. Remove exited vehicles
         removeExitedVehicles();
+
+        // 10. Update EMA average speed (excluding stopped vehicles)
+        double instantAvg = vehicles.stream()
+                .filter(v -> v.isActive() && v.getSpeed() >= 0.5)
+                .mapToDouble(Vehicle::getSpeed)
+                .average().orElse(emaAverageSpeed);
+        emaAverageSpeed += 0.05 * (instantAvg - emaAverageSpeed);
     }
 
     /**
@@ -214,6 +222,11 @@ public class SimulationEngine {
         for (RoadSegment r : allRoads) {
             if (r.getId() == currentRoad.getId())
                 continue;
+
+            // Only consider roads whose start is near current road's end (spatially connected)
+            double dist = Math.hypot(r.getStartX() - currentRoad.getEndX(),
+                                     r.getStartY() - currentRoad.getEndY());
+            if (dist > 50.0) continue;
 
             double angleDiff = normalizeAngle(r.getHeading() - myHeading);
 
@@ -449,56 +462,79 @@ public class SimulationEngine {
             }
         }
 
-        // Only resolve same-road overlaps (push follower back)
-        List<Vehicle> active = new ArrayList<>();
-        for (Vehicle v : vehicles)
-            if (v.isActive())
-                active.add(v);
+        // Resolve same-road overlaps in multiple passes to handle chain reactions
+        for (int pass = 0; pass < 3; pass++) {
+            List<Vehicle> active = new ArrayList<>();
+            for (Vehicle v : vehicles)
+                if (v.isActive())
+                    active.add(v);
 
-        for (int i = 0; i < active.size(); i++) {
-            Vehicle a = active.get(i);
-            for (int j = i + 1; j < active.size(); j++) {
-                Vehicle b = active.get(j);
+            for (int i = 0; i < active.size(); i++) {
+                Vehicle a = active.get(i);
+                for (int j = i + 1; j < active.size(); j++) {
+                    Vehicle b = active.get(j);
 
-                // Only resolve same-road overlaps
-                if (a.getRoadSegmentId() != b.getRoadSegmentId())
-                    continue;
+                    if (a.getRoadSegmentId() != b.getRoadSegmentId())
+                        continue;
 
-                // Check lateral overlap
-                double aLeft = a.getX() - a.getWidth() / 2.0;
-                double aRight = a.getX() + a.getWidth() / 2.0;
-                double bLeft = b.getX() - b.getWidth() / 2.0;
-                double bRight = b.getX() + b.getWidth() / 2.0;
-                if (!(aLeft < bRight && aRight > bLeft))
-                    continue;
+                    // Check lateral overlap
+                    double aLeft = a.getX() - a.getWidth() / 2.0;
+                    double aRight = a.getX() + a.getWidth() / 2.0;
+                    double bLeft = b.getX() - b.getWidth() / 2.0;
+                    double bRight = b.getX() + b.getWidth() / 2.0;
+                    if (!(aLeft < bRight && aRight > bLeft))
+                        continue;
 
-                // Check longitudinal overlap
-                double aFront = a.getY() + a.getLength() / 2.0;
-                double aRear = a.getY() - a.getLength() / 2.0;
-                double bFront = b.getY() + b.getLength() / 2.0;
-                double bRear = b.getY() - b.getLength() / 2.0;
-                if (!(aRear < bFront && aFront > bRear))
-                    continue;
+                    // Check longitudinal overlap
+                    double aFront = a.getY() + a.getLength() / 2.0;
+                    double aRear = a.getY() - a.getLength() / 2.0;
+                    double bFront = b.getY() + b.getLength() / 2.0;
+                    double bRear = b.getY() - b.getLength() / 2.0;
+                    if (!(aRear < bFront && aFront > bRear))
+                        continue;
 
-                // Push follower back, match speeds
-                Vehicle leader = a.getY() >= b.getY() ? a : b;
-                Vehicle follower = a.getY() >= b.getY() ? b : a;
-                double leaderRear = leader.getY() - leader.getLength() / 2.0;
-                follower.setY(leaderRear - follower.getLength() / 2.0 - 0.5);
-                if (follower.getSpeed() > leader.getSpeed()) {
-                    follower.setSpeed(leader.getSpeed());
+                    // Push follower back, match speeds
+                    Vehicle leader = a.getY() >= b.getY() ? a : b;
+                    Vehicle follower = a.getY() >= b.getY() ? b : a;
+                    double leaderRear = leader.getY() - leader.getLength() / 2.0;
+                    follower.setY(leaderRear - follower.getLength() / 2.0 - 1.0);
+                    if (follower.getSpeed() > leader.getSpeed()) {
+                        follower.setSpeed(leader.getSpeed());
+                    }
                 }
             }
         }
     }
 
     private void removeExitedVehicles() {
-        vehicles.removeIf(v -> {
+        for (Vehicle v : vehicles) {
+            if (!v.isActive()) continue;
             RoadSegment road = roadNetwork.getSegment(v.getRoadSegmentId());
-            if (road == null)
-                return true;
-            return v.getY() > road.getLength() + 10;
-        });
+            if (road == null) {
+                v.setActive(false);
+                continue;
+            }
+            if (v.getY() > road.getLength() + 10) {
+                // If vehicle has a target road, attempt direct transfer instead of deleting
+                if (v.getTargetRoadId() >= 0) {
+                    RoadSegment target = roadNetwork.getSegment(v.getTargetRoadId());
+                    if (target != null) {
+                        v.setRoadSegmentId(target.getId());
+                        v.setY(v.getLength());
+                        v.setX(Math.max(v.getWidth() / 2.0,
+                                Math.min(v.getX(), target.getWidth() - v.getWidth() / 2.0)));
+                        v.setTargetRoadId(-1);
+                        continue;
+                    }
+                }
+                v.setActive(false);
+            }
+        }
+
+        // Batch-purge inactive vehicles every 100 ticks to reduce GC pressure
+        if (tickCount % 100 == 0) {
+            vehicles.removeIf(v -> !v.isActive());
+        }
     }
 
     // ---- Control ----
@@ -515,6 +551,7 @@ public class SimulationEngine {
         running.set(false);
         vehicles.clear();
         tickCount = 0;
+        emaAverageSpeed = 0;
     }
 
     public boolean isRunning() {
@@ -540,9 +577,6 @@ public class SimulationEngine {
     }
 
     public double getAverageSpeed() {
-        return vehicles.stream()
-                .filter(Vehicle::isActive)
-                .mapToDouble(Vehicle::getSpeed)
-                .average().orElse(0.0);
+        return emaAverageSpeed;
     }
 }

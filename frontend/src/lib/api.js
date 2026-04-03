@@ -5,6 +5,11 @@ export async function fetchState() {
   return res.json();
 }
 
+export async function fetchMapData() {
+  const res = await fetch(`${API_BASE}/map`);
+  return res.json();
+}
+
 export async function startSimulation() {
   const res = await fetch(`${API_BASE}/start`, { method: 'POST' });
   return res.json();

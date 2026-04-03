@@ -47,7 +47,17 @@ public class SimulationRestController {
     }
 
     /**
-     * GET /api/state - full simulation snapshot for rendering.
+     * GET /api/map - static map data (roads, signals, junction zones).
+     * Called once per map load.
+     */
+    @GetMapping("/map")
+    public MapDataDTO getMapData() {
+        return MapDataDTO.from(engine);
+    }
+
+    /**
+     * GET /api/state - dynamic simulation state (vehicles + stats).
+     * Called ~20x/sec by the frontend.
      */
     @GetMapping("/state")
     public SimulationStateDTO getState() {

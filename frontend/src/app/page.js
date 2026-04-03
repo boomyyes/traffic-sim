@@ -9,7 +9,7 @@ import ControlBar from '../components/ControlBar';
 import styles from './page.module.css';
 
 export default function Home() {
-  const state = useSimulation();
+  const { state, mapData } = useSimulation();
   const dashboardRef = useRef(null);
 
   // Entrance animation on mount
@@ -23,8 +23,9 @@ export default function Home() {
     });
   }, []);
 
+  const roadCount = mapData?.roadCount ?? state?.roadCount ?? 0;
   const mapName = state?.running !== undefined
-    ? (state.roadCount > 0 ? `${state.roadCount} roads loaded` : 'No map loaded')
+    ? (roadCount > 0 ? `${roadCount} roads loaded` : 'No map loaded')
     : 'Connecting...';
 
   return (
@@ -41,9 +42,9 @@ export default function Home() {
       {/* Main Content */}
       <div className={styles.main}>
         <div className={styles.canvasWrapper}>
-          <SimulationCanvas state={state} />
+          <SimulationCanvas state={state} mapData={mapData} />
         </div>
-        <StatsPanel state={state} />
+        <StatsPanel state={state} mapData={mapData} />
       </div>
 
       {/* Control Bar */}

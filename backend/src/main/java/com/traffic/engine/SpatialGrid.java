@@ -42,7 +42,7 @@ public class SpatialGrid {
         for (Vehicle v : vehicles) {
             if (!v.isActive())
                 continue;
-            long key = cellKey(v.getX(), v.getY());
+            long key = cellKey(v.getWorldX(), v.getWorldY());
             cells.computeIfAbsent(key, k -> new ArrayList<>()).add(v);
         }
     }
@@ -76,8 +76,8 @@ public class SpatialGrid {
         List<Vehicle> filtered = new ArrayList<>();
         double r2 = radius * radius;
         for (Vehicle v : all) {
-            double dx = v.getX() - x;
-            double dy = v.getY() - y;
+            double dx = v.getWorldX() - x;
+            double dy = v.getWorldY() - y;
             if (dx * dx + dy * dy <= r2) {
                 filtered.add(v);
             }

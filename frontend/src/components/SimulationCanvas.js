@@ -36,7 +36,7 @@ function getVehicleColor(type) {
  * SimulationCanvas — HTML5 Canvas renderer.
  * Direct port of TrafficCanvas.java with parametric road rendering.
  */
-export default function SimulationCanvas({ state }) {
+export default function SimulationCanvas({ state, mapData }) {
   const canvasRef = useRef(null);
   const viewRef = useRef({ scale: 1.5, offsetX: 10, offsetY: 10 });
   const dragRef = useRef({ dragging: false, lastX: 0, lastY: 0 });
@@ -55,12 +55,12 @@ export default function SimulationCanvas({ state }) {
 
   // ---- Auto-fit to map bounds on first load ----
   useEffect(() => {
-    if (!state || !state.roads || state.roads.length === 0 || hasAutoFit.current) return;
+    if (!mapData || !mapData.roads || mapData.roads.length === 0 || hasAutoFit.current) return;
     const canvas = canvasRef.current;
     if (!canvas) return;
 
     let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
-    for (const r of state.roads) {
+    for (const r of mapData.roads) {
       minX = Math.min(minX, r.startX, r.endX);
       maxX = Math.max(maxX, r.startX, r.endX);
       minY = Math.min(minY, r.startY, r.endY);
@@ -77,7 +77,7 @@ export default function SimulationCanvas({ state }) {
       offsetY: (canvas.height / scale - (maxY + minY)) / 2,
     };
     hasAutoFit.current = true;
-  }, [state]);
+  }, [mapData]);
 
   // ---- Mouse interaction (pan + zoom) ----
   useEffect(() => {
@@ -129,16 +129,23 @@ export default function SimulationCanvas({ state }) {
       ctx.fillStyle = COLORS.background;
       ctx.fillRect(0, 0, width, height);
 
-      if (!state || !state.roads) {
+      const roads = mapData?.roads;
+      if (!roads || roads.length === 0) {
         drawNoConnection(ctx, width, height);
         raf = requestAnimationFrame(render);
         return;
       }
 
+      // Build road lookup map for O(1) access
+      const roadMap = new Map();
+      for (const r of roads) {
+        roadMap.set(r.id, r);
+      }
+
       // Junction zones
-      if (state.junctionZones) {
+      if (mapData.junctionZones) {
         ctx.fillStyle = COLORS.junction;
-        for (const jz of state.junctionZones) {
+        for (const jz of mapData.junctionZones) {
           const x = toScreenX(jz[0]);
           const y = toScreenY(jz[1]);
           const w = (jz[2] - jz[0]) * viewRef.current.scale;
@@ -148,21 +155,21 @@ export default function SimulationCanvas({ state }) {
       }
 
       // Roads
-      for (const road of state.roads) {
+      for (const road of roads) {
         drawRoad(ctx, road);
       }
 
       // Signals
-      if (state.signals) {
-        for (const signal of state.signals) {
-          drawSignal(ctx, signal, state.roads);
+      if (mapData.signals) {
+        for (const signal of mapData.signals) {
+          drawSignal(ctx, signal, roadMap);
         }
       }
 
       // Vehicles
-      if (state.vehicles) {
+      if (state && state.vehicles) {
         for (const v of state.vehicles) {
-          drawVehicle(ctx, v, state.roads);
+          drawVehicle(ctx, v, roadMap);
         }
       }
 
@@ -174,7 +181,7 @@ export default function SimulationCanvas({ state }) {
 
     raf = requestAnimationFrame(render);
     return () => cancelAnimationFrame(raf);
-  }, [state, toScreenX, toScreenY]);
+  }, [state, mapData, toScreenX, toScreenY]);
 
   // ---- Drawing functions ----
 
@@ -280,8 +287,8 @@ export default function SimulationCanvas({ state }) {
     }
   }
 
-  function drawSignal(ctx, signal, roads) {
-    const road = roads.find((r) => r.id === signal.roadSegmentId);
+  function drawSignal(ctx, signal, roadMap) {
+    const road = roadMap.get(signal.roadSegmentId);
     if (!road) return;
 
     const len = road.roadLength;
@@ -338,8 +345,8 @@ export default function SimulationCanvas({ state }) {
     ctx.globalAlpha = 1.0;
   }
 
-  function drawVehicle(ctx, v, roads) {
-    const road = roads.find((r) => r.id === v.roadSegmentId);
+  function drawVehicle(ctx, v, roadMap) {
+    const road = roadMap.get(v.roadSegmentId);
     if (!road) return;
 
     const len = road.roadLength;
@@ -404,10 +411,10 @@ export default function SimulationCanvas({ state }) {
   // ---- Public methods via ref ----
   const fitView = useCallback(() => {
     hasAutoFit.current = false;
-    if (state && state.roads && state.roads.length > 0) {
+    if (mapData && mapData.roads && mapData.roads.length > 0) {
       const canvas = canvasRef.current;
       let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
-      for (const r of state.roads) {
+      for (const r of mapData.roads) {
         minX = Math.min(minX, r.startX, r.endX);
         maxX = Math.max(maxX, r.startX, r.endX);
         minY = Math.min(minY, r.startY, r.endY);
@@ -424,7 +431,7 @@ export default function SimulationCanvas({ state }) {
         offsetY: (canvas.height / scale - (maxY + minY)) / 2,
       };
     }
-  }, [state]);
+  }, [mapData]);
 
   // Expose fitView and viewRef for parent components
   useEffect(() => {

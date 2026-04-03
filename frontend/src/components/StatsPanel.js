@@ -7,7 +7,7 @@ import styles from './StatsPanel.module.css';
 /**
  * Live statistics sidebar with anime.js counter animations.
  */
-export default function StatsPanel({ state }) {
+export default function StatsPanel({ state, mapData }) {
   const prevStats = useRef({});
 
   // Animate stat values when they change significantly
@@ -52,7 +52,7 @@ export default function StatsPanel({ state }) {
 
       <div className={styles.separator} />
       <h4 className={styles.subheader}>🗺️ Road Network</h4>
-      <span className={styles.stat} id="stat-roadCount">Roads: {state.roadCount}</span>
+      <span className={styles.stat} id="stat-roadCount">Roads: {mapData?.roadCount ?? state.roadCount}</span>
 
       <div className={styles.separator} />
       <h4 className={styles.subheader}>🚗 Vehicle Mix</h4>
