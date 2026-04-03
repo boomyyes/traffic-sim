@@ -28,6 +28,11 @@ target/
 build/
 bin/
 
+# Node / Next.js
+node_modules/
+.next/
+out/
+
 # IDE files
 .vscode/
 .idea/

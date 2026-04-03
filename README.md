@@ -1,44 +1,70 @@
 # Indian Traffic Simulation Engine
 
-A Java-based microscopic simulation engine using Strip-Based lane-free logic tailored for heterogeneous Indian traffic environments.
+A microscopic simulation engine using Strip-Based lane-free logic for heterogeneous Indian traffic environments. Now with a modern **Next.js web frontend** powered by **anime.js** animations.
 
-## Features
+## Architecture
 
-- **Double-Buffered Updates**: Prevents race conditions during simulation ticks by separating state computation and commitment.
-- **Strip-Based Lane-Free Logic**: Roads are divided into 0.5m lateral strips instead of lanes to simulate the characteristic "filtering" behavior of Indian traffic.
-- **Intelligent Driver Model (IDM)**: Modified IDM for finding leaders in the same *lateral corridor*, accounting for mixed-width vehicles.
-- **Indian Vehicle Mix**: Accurate spawning distribution reflecting real Indian roads (Bikes, Auto-rickshaws, Cars, Buses, Trucks).
-- **OpenStreetMap Integration**: Capable of parsing real-world OSM data (like the included Guwahati map) directly into the application.
+```
+mini-project/
+├── backend/        Java/Spring Boot simulation engine + REST API
+├── frontend/       Next.js web dashboard + anime.js animations
+├── run.bat         Launches both backend and frontend
+└── README.md
+```
 
-## Tech Stack
-
-- **Language**: Java 17 / 21
+### Backend (`backend/`)
+- **Language**: Java 21
 - **Framework**: Spring Boot 3.2.5
-- **UI**: JavaFX 21.0.2
+- **API**: REST endpoints on `http://localhost:8080/api`
 - **Spatial Math**: JTS 1.19.0
-- **Build Tool**: Maven
+- **Build**: Maven
+
+### Frontend (`frontend/`)
+- **Framework**: Next.js (App Router)
+- **Rendering**: HTML5 Canvas (parametric road/vehicle rendering)
+- **Animations**: anime.js v4
+- **Styling**: Vanilla CSS (dark theme)
 
 ## Getting Started
 
 ### Prerequisites
-
-- Java Development Kit (JDK) 21 or higher
+- Java Development Kit (JDK) 21+
 - Apache Maven
+- Node.js 18+ and npm
 
-### How to Run
-
-You can start the application using the provided batch script (on Windows) or via Maven.
-
-**Using the batch script:**
+### Quick Start (both processes)
 ```cmd
 run.bat
 ```
 
-**Using Maven directly:**
+### Manual Start
+
+**Backend:**
 ```bash
-mvn javafx:run
+cd backend
+mvn spring-boot:run
 ```
-*(Alternatively, you can try `mvn spring-boot:run`)*
+
+**Frontend** (in a second terminal):
+```bash
+cd frontend
+npm install    # first time only
+npm run dev
+```
+
+Then open **http://localhost:3000** in your browser.
+
+## API Endpoints
+
+| Endpoint | Method | Description |
+|---|---|---|
+| `/api/state` | GET | Full simulation snapshot |
+| `/api/start` | POST | Start simulation |
+| `/api/stop` | POST | Pause simulation |
+| `/api/reset` | POST | Reset to sample network |
+| `/api/config` | GET | Simulation config |
+| `/api/upload-osm` | POST | Upload OSM map file |
+| `/api/load-nerul` | POST | Load Nerul demo |
 
 ## Controls
 
@@ -47,13 +73,23 @@ mvn javafx:run
 | Start simulation | ▶ Start button |
 | Pause | ⏸ Pause button |
 | Reset | 🔄 Reset button |
-| Zoom | Scroll wheel or slider |
+| Zoom | Scroll wheel or +/- buttons |
 | Pan | Click and drag |
+| Fit view | 🔍 Fit button |
+| Load map | 📂 Load OSM button |
 
 ## Project Structure
 
-- `src/main/java/com/traffic/model/` - Core entities (Vehicle types, Strips, RoadNetworks)
-- `src/main/java/com/traffic/physics/` - Movement logic, IDM Calculator, and Lateral Seepage Logic
-- `src/main/java/com/traffic/engine/` - Simulation tick loop, Simulation Engine configurable params
-- `src/main/java/com/traffic/map/` - Network generation and OSM XML parser tools
-- `src/main/java/com/traffic/ui/` - JavaFX application entry, Dashboard Controllers, and renderers (TrafficCanvas)
+### Backend
+- `src/main/java/com/traffic/model/` — Core entities (Vehicle, Strip, RoadNetwork)
+- `src/main/java/com/traffic/physics/` — IDM Calculator, Seepage Logic
+- `src/main/java/com/traffic/engine/` — Simulation tick loop
+- `src/main/java/com/traffic/map/` — OSM parser, Overpass API fetcher
+- `src/main/java/com/traffic/api/` — REST controller, DTOs, CORS config
+
+### Frontend
+- `src/components/SimulationCanvas.js` — HTML5 Canvas renderer
+- `src/components/StatsPanel.js` — Live statistics sidebar
+- `src/components/ControlBar.js` — Playback controls + zoom
+- `src/hooks/useSimulation.js` — Real-time state polling
+- `src/lib/api.js` — Backend API client

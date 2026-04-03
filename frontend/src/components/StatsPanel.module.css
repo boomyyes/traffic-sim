@@ -1,0 +1,38 @@
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 16px;
+  width: 210px;
+  min-width: 210px;
+  background: #1e1e28;
+  border-left: 1px solid #2a2a38;
+  overflow-y: auto;
+}
+
+.header {
+  font-size: 14px;
+  font-weight: 700;
+  color: #b4b4dc;
+  margin: 0;
+}
+
+.subheader {
+  font-size: 12px;
+  font-weight: 700;
+  color: #a6a6a6;
+  margin: 0;
+}
+
+.separator {
+  height: 1px;
+  background: #333;
+  margin: 4px 0;
+}
+
+.stat {
+  font-family: 'Consolas', 'Courier New', monospace;
+  font-size: 11px;
+  color: #c8c8c8;
+  display: inline-block;
+}

@@ -1,15 +1,22 @@
 @echo off
-title Indian Traffic Simulation Engine
 echo ============================================
-echo   Indian Traffic Simulation Engine
+echo  Indian Traffic Simulation Engine
+echo  Starting Backend + Frontend...
 echo ============================================
+
+:: Start backend in a new window
+start "Backend - Spring Boot" cmd /k "cd /d %~dp0backend && mvn spring-boot:run"
+
+:: Wait for backend to start
+echo Waiting for backend to start...
+timeout /t 8 /nobreak > nul
+
+:: Start frontend in a new window
+start "Frontend - Next.js" cmd /k "cd /d %~dp0frontend && npm run dev"
+
 echo.
-echo Starting application...
+echo Backend:  http://localhost:8080
+echo Frontend: http://localhost:3000
 echo.
-mvn javafx:run -f "%~dp0pom.xml"
-if errorlevel 1 (
-    echo.
-    echo [!] Failed to start. Make sure Maven and Java 21+ are installed.
-    echo     You can also try: mvn spring-boot:run
-)
+echo Close both windows to stop the application.
 pause
