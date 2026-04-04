@@ -1,0 +1,14 @@
+# Render Blueprint - Indian Traffic Simulation Engine
+# https://docs.render.com/blueprint-spec
+
+services:
+  - type: web
+    name: indian-traffic-engine
+    runtime: docker
+    repo: https://github.com/YOUR_USERNAME/YOUR_REPO  # ← Update this
+    rootDir: backend
+    dockerfilePath: ./Dockerfile
+    plan: free
+    envVars:
+      - key: CORS_ALLOWED_ORIGINS
+        value: https://YOUR_APP.vercel.app  # ← Update after Vercel deploy

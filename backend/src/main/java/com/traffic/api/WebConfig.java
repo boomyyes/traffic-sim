@@ -17,8 +17,13 @@ public class WebConfig {
         return new WebMvcConfigurer() {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
+                String corsEnv = System.getenv("CORS_ALLOWED_ORIGINS");
+                String[] origins = (corsEnv != null && !corsEnv.isBlank())
+                        ? corsEnv.split(",")
+                        : new String[]{"http://localhost:3000"};
+
                 registry.addMapping("/api/**")
-                        .allowedOrigins("http://localhost:3000")
+                        .allowedOrigins(origins)
                         .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                         .allowedHeaders("*");
             }

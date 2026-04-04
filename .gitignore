@@ -44,7 +44,13 @@ out/
 .DS_Store
 Thumbs.db
 
+# Environment files
+.env.local
+.env*.local
+
 # Project specific files that shouldn't be tracked
 *.ppt
 *.osm
 walkthrough.md.resolved
+comprehensive_summary.md
+implementation_plan.md
