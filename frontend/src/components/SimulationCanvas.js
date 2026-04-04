@@ -108,8 +108,20 @@ export default function SimulationCanvas({ state, mapData }) {
 
     const onWheel = (e) => {
       e.preventDefault();
+      const rect = canvas.getBoundingClientRect();
+      const mouseX = e.clientX - rect.left;
+      const mouseY = e.clientY - rect.top;
+      const v = viewRef.current;
+      // World point under cursor before zoom
+      const worldX = mouseX / v.scale - v.offsetX;
+      const worldY = mouseY / v.scale - v.offsetY;
+      // Apply zoom
       const delta = e.deltaY > 0 ? -0.15 : 0.15;
-      viewRef.current.scale = Math.max(0.3, Math.min(15.0, viewRef.current.scale + delta));
+      const newScale = Math.max(0.3, Math.min(15.0, v.scale + delta));
+      // Adjust offset so the same world point stays under the cursor
+      v.offsetX = mouseX / newScale - worldX;
+      v.offsetY = mouseY / newScale - worldY;
+      v.scale = newScale;
     };
     const onMouseDown = (e) => {
       dragRef.current = { dragging: true, lastX: e.clientX, lastY: e.clientY };
