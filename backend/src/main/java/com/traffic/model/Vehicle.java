@@ -77,14 +77,36 @@ public class Vehicle {
      * Lateral movement is smoothly interpolated instead of instant.
      */
     public void prepareNextState(double newAcceleration, double lateralMove, double dt) {
-        // Smooth acceleration to prevent jerk
-        double accelAlpha = Math.min(1.0, ACCEL_SMOOTHING * dt);
-        smoothedAccel = smoothedAccel + accelAlpha * (newAcceleration - smoothedAccel);
+        // Smooth acceleration to prevent jerk — but bypass smoothing when the
+        // vehicle is at low speed and needs harder braking than currently applied.
+        // Without this, the smoothed value takes ~10 ticks to catch up, during
+        // which the vehicle creeps forward into the leader or past the stop line.
+        // Collision resolution then snaps it back, creating visible oscillation.
+        if (newAcceleration < 0 && newAcceleration < smoothedAccel && speed < 1.5) {
+            // Low speed + need stronger braking → apply immediately
+            smoothedAccel = newAcceleration;
+        } else {
+            double accelAlpha = Math.min(1.0, ACCEL_SMOOTHING * dt);
+            smoothedAccel = smoothedAccel + accelAlpha * (newAcceleration - smoothedAccel);
+        }
         this.acceleration = smoothedAccel;
 
-        // Longitudinal update with smoothed acceleration
-        this.nextSpeed = Math.max(0, speed + smoothedAccel * dt);
-        this.nextY = y + speed * dt + 0.5 * smoothedAccel * dt * dt;
+        // Longitudinal update — correctly handle stopping within the timestep.
+        // When the vehicle would reach zero speed before dt elapses, compute
+        // the exact stopping distance instead of using the full-dt formula
+        // (which can overshoot the correct position).
+        double rawNextSpeed = speed + smoothedAccel * dt;
+        if (rawNextSpeed <= 0 && speed > 0 && smoothedAccel < 0) {
+            // Vehicle stops within this timestep
+            double tStop = -speed / smoothedAccel; // time to reach zero speed
+            this.nextY = y + speed * tStop + 0.5 * smoothedAccel * tStop * tStop;
+            this.nextSpeed = 0;
+        } else {
+            this.nextSpeed = Math.max(0, rawNextSpeed);
+            this.nextY = y + speed * dt + 0.5 * smoothedAccel * dt * dt;
+        }
+        // Safety: vehicle should never move backward on its road
+        this.nextY = Math.max(this.nextY, y);
 
         // Smooth lateral update:
         // lateralMove is the DESIRED lateral displacement (from SeepageLogic)

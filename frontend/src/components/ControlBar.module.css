@@ -1,55 +1,73 @@
 .bar {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 10px 16px;
-  background: #111118;
-  flex-wrap: wrap;
+  gap: 6px;
+  padding: 8px 16px;
+  background: var(--bg-panel);
+  backdrop-filter: blur(var(--blur));
+  -webkit-backdrop-filter: blur(var(--blur));
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
 }
 
 .separator {
   width: 1px;
-  height: 28px;
-  background: #333;
+  height: 20px;
+  background: rgba(255, 255, 255, 0.08);
   margin: 0 4px;
 }
 
 .label {
-  color: #fff;
-  font-size: 11px;
-  font-weight: 600;
+  color: var(--text-secondary);
+  font-size: 10px;
+  font-weight: 500;
 }
 
 .btn {
-  padding: 7px 14px;
+  padding: 6px 12px;
   border: none;
-  border-radius: 5px;
-  color: white;
-  font-weight: 700;
+  border-radius: 8px;
+  color: var(--text-primary);
+  font-weight: 600;
   font-size: 11px;
   cursor: pointer;
-  transition: filter 0.15s, transform 0.1s;
-  display: inline-block;
+  background: rgba(255, 255, 255, 0.06);
+  transition: background 0.15s, transform 0.1s;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .btn:hover {
-  filter: brightness(1.2);
+  background: rgba(255, 255, 255, 0.12);
 }
 
 .btn:active {
-  filter: brightness(0.9);
+  background: rgba(255, 255, 255, 0.04);
 }
 
-.startBtn { background: #2d8a4e; }
-.pauseBtn { background: #c49a2a; }
-.resetBtn { background: #a83232; }
-.fitBtn { background: #444455; }
+.startBtn { background: rgba(45, 138, 78, 0.25); }
+.startBtn:hover { background: rgba(45, 138, 78, 0.4); }
+
+.pauseBtn { background: rgba(196, 154, 42, 0.25); }
+.pauseBtn:hover { background: rgba(196, 154, 42, 0.4); }
+
+.resetBtn { background: rgba(168, 50, 50, 0.25); }
+.resetBtn:hover { background: rgba(168, 50, 50, 0.4); }
+
+.fitBtn { background: rgba(255, 255, 255, 0.06); }
+
 .zoomBtn {
-  background: #444455;
-  padding: 7px 12px;
+  background: rgba(255, 255, 255, 0.06);
+  padding: 6px 10px;
   font-size: 14px;
   font-weight: 800;
   line-height: 1;
 }
-.osmBtn { background: #2a6a9e; }
-.nerulBtn { background: #5a3d8a; }
+
+.osmBtn { background: rgba(42, 106, 158, 0.25); }
+.osmBtn:hover { background: rgba(42, 106, 158, 0.4); }
+
+.nerulBtn { background: rgba(90, 61, 138, 0.25); }
+.nerulBtn:hover { background: rgba(90, 61, 138, 0.4); }

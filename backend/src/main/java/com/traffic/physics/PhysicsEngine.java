@@ -51,6 +51,7 @@ public class PhysicsEngine {
 
         // 2. Find same-road leader
         LeaderInfo leader = findLeaderInfo(vehicle, sameRoadVehicles);
+        boolean leaderIsSignal = false;
 
         // 3. Update AI state machine
         VehicleAI.AIOutput aiOutput = ai.update(vehicle, road, network, leader.gap, dt);
@@ -60,6 +61,7 @@ public class PhysicsEngine {
             LeaderInfo signalLeader = findSignalLeader(vehicle, road, network, ai);
             if (signalLeader.gap < leader.gap) {
                 leader = signalLeader;
+                leaderIsSignal = true;
             }
         }
 
@@ -67,9 +69,14 @@ public class PhysicsEngine {
         double junctionBraking = computeJunctionBraking(vehicle, allVehicles, network);
 
         // 6. IDM acceleration with personality-adjusted gap
+        // IMPORTANT: Only apply the personality-based minimum following gap when the
+        // leader is a real vehicle. A signal stop line is a hard wall — inflating
+        // its gap caused vehicles to creep past the line and oscillate back.
         double effectiveDesiredSpeed = Math.min(
                 vehicle.getType().getMaxSpeed(), road.getSpeedLimit());
-        double adjustedGap = Math.max(leader.gap, ai.getMinFollowingGap());
+        double adjustedGap = leaderIsSignal
+                ? leader.gap
+                : Math.max(leader.gap, ai.getMinFollowingGap());
         double acceleration = idm.calculateAcceleration(
                 vehicle.getSpeed(), adjustedGap, leader.deltaV,
                 effectiveDesiredSpeed);
@@ -139,6 +146,14 @@ public class PhysicsEngine {
             }
         }
         if (!nearJunction) return 0;
+
+        // At signalized intersections, trust the signal — don't brake for cross-traffic on green
+        List<TrafficSignal> mySignals = network.getSignalsForRoad(vehicle.getRoadSegmentId());
+        if (!mySignals.isEmpty()) {
+            boolean hasGreen = mySignals.stream()
+                    .anyMatch(s -> s.getState() == TrafficSignal.State.GREEN);
+            if (hasGreen) return 0;
+        }
 
         double maxBraking = 0;
 

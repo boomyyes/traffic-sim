@@ -1,64 +1,114 @@
 .dashboard {
-  display: flex;
-  flex-direction: column;
+  position: relative;
+  width: 100vw;
   height: 100vh;
-  background: var(--bg-primary);
+  overflow: hidden;
+  background: var(--bg-deep);
 }
 
-/* ---- Title Bar ---- */
-.titleBar {
+/* Canvas fills entire viewport, sits behind overlays */
+.canvasLayer {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+/* ---- Top HUD bar ---- */
+.topHud {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  right: 16px;
+  z-index: 10;
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 10px 20px;
-  background: var(--bg-secondary);
-  border-bottom: 1px solid var(--border);
+  background: var(--bg-panel);
+  backdrop-filter: blur(var(--blur));
+  -webkit-backdrop-filter: blur(var(--blur));
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius);
+  pointer-events: auto;
+}
+
+.topLeft {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.hudDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
   flex-shrink: 0;
 }
 
-.titleLeft {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
+.hudDotGreen {
+  background: var(--accent-green);
+  box-shadow: 0 0 6px var(--glow-green);
 }
 
-.title {
-  font-size: 18px;
-  font-weight: 700;
-  color: #fff;
+.hudDotRed {
+  background: var(--accent-red);
+  box-shadow: 0 0 6px rgba(244, 67, 54, 0.4);
+}
+
+.appTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  letter-spacing: 0.02em;
   margin: 0;
+  white-space: nowrap;
 }
 
 .subtitle {
-  font-size: 13px;
-  color: var(--text-secondary);
+  font-size: 11px;
+  color: var(--text-dim);
+  white-space: nowrap;
 }
 
-.mapName {
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--accent-blue);
-}
-
-/* ---- Main Content ---- */
-.main {
-  display: flex;
-  flex: 1;
-  min-height: 0;
-  overflow: hidden;
-}
-
-.canvasWrapper {
-  flex: 1;
+/* ---- HUD Stats ---- */
+.hudStats {
   display: flex;
   align-items: center;
-  justify-content: center;
-  padding: 8px;
-  min-width: 0;
+  gap: 20px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
 }
 
-.canvasWrapper canvas {
-  max-width: 100%;
-  max-height: 100%;
-  box-shadow: 0 0 30px rgba(0 0 0 / 0.4);
+.hudStat {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+.hudStatLabel {
+  color: var(--text-secondary);
+  font-weight: 400;
+}
+
+.hudStatValue {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+/* ---- Speed Gauge ---- */
+.gaugeWrapper {
+  width: 64px;
+  height: 64px;
+  flex-shrink: 0;
+}
+
+/* ---- Bottom control bar ---- */
+.bottomBar {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
 }

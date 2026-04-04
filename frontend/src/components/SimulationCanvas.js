@@ -4,7 +4,7 @@ import { useRef, useEffect, useCallback } from 'react';
 
 // ---- Color palette (matching TrafficCanvas.java) ----
 const COLORS = {
-  background: '#23262a',
+  background: '#05070a',
   road: '#37373c',
   ruralRoad: '#464137',
   roadEdge: '#b4b4b4',
@@ -41,6 +41,7 @@ export default function SimulationCanvas({ state, mapData }) {
   const viewRef = useRef({ scale: 1.5, offsetX: 10, offsetY: 10 });
   const dragRef = useRef({ dragging: false, lastX: 0, lastY: 0 });
   const hasAutoFit = useRef(false);
+  const cssSize = useRef({ width: 1000, height: 700 });
 
   // ---- Coordinate transforms ----
   const toScreenX = useCallback((worldX) => {
@@ -68,16 +69,37 @@ export default function SimulationCanvas({ state, mapData }) {
     }
     const worldW = Math.max(1, (maxX - minX) * 1.1);
     const worldH = Math.max(1, (maxY - minY) * 1.1);
-    const scaleX = canvas.width / worldW;
-    const scaleY = canvas.height / worldH;
+    const cw = cssSize.current.width;
+    const ch = cssSize.current.height;
+    const scaleX = cw / worldW;
+    const scaleY = ch / worldH;
     const scale = Math.min(scaleX, scaleY);
     viewRef.current = {
       scale,
-      offsetX: (canvas.width / scale - (maxX + minX)) / 2,
-      offsetY: (canvas.height / scale - (maxY + minY)) / 2,
+      offsetX: (cw / scale - (maxX + minX)) / 2,
+      offsetY: (ch / scale - (maxY + minY)) / 2,
     };
     hasAutoFit.current = true;
   }, [mapData]);
+
+  // ---- ResizeObserver for full-viewport canvas ----
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const parent = canvas.parentElement;
+    const observer = new ResizeObserver((entries) => {
+      const { width, height } = entries[0].contentRect;
+      if (width === 0 || height === 0) return;
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = width * dpr;
+      canvas.height = height * dpr;
+      canvas.style.width = width + 'px';
+      canvas.style.height = height + 'px';
+      cssSize.current = { width, height };
+    });
+    observer.observe(parent);
+    return () => observer.disconnect();
+  }, []);
 
   // ---- Mouse interaction (pan + zoom) ----
   useEffect(() => {
@@ -159,10 +181,14 @@ export default function SimulationCanvas({ state, mapData }) {
         drawRoad(ctx, road);
       }
 
-      // Signals
+      // Signals (merge dynamic state from per-tick response)
       if (mapData.signals) {
+        const signalStateMap = state?.signalStates
+          ? new Map(state.signalStates.map(s => [s.id, s.state]))
+          : null;
         for (const signal of mapData.signals) {
-          drawSignal(ctx, signal, roadMap);
+          const dynamicState = signalStateMap?.get(signal.id) ?? signal.state;
+          drawSignal(ctx, { ...signal, state: dynamicState }, roadMap);
         }
       }
 
@@ -172,9 +198,6 @@ export default function SimulationCanvas({ state, mapData }) {
           drawVehicle(ctx, v, roadMap);
         }
       }
-
-      // Legend
-      drawLegend(ctx, width);
 
       raf = requestAnimationFrame(render);
     };
@@ -374,45 +397,33 @@ export default function SimulationCanvas({ state, mapData }) {
     ctx.save();
     ctx.translate(screenCX, screenCY);
     ctx.rotate(angle);
-    ctx.fillStyle = getVehicleColor(v.type);
-    ctx.fillRect(-screenW / 2, -screenH / 2, screenW, screenH);
-    ctx.strokeStyle = 'rgba(20,20,20,0.6)';
+
+    const color = getVehicleColor(v.type);
+    const r = Math.min(2 * scale, screenW * 0.2, screenH * 0.3);
+
+    // Glow
+    ctx.shadowColor = color;
+    ctx.shadowBlur = 4 * scale;
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.roundRect(-screenW / 2, -screenH / 2, screenW, screenH, r);
+    ctx.fill();
+
+    // Highlight edge (no glow)
+    ctx.shadowBlur = 0;
+    ctx.strokeStyle = 'rgba(255,255,255,0.15)';
     ctx.lineWidth = 0.5;
-    ctx.strokeRect(-screenW / 2, -screenH / 2, screenW, screenH);
+    ctx.beginPath();
+    ctx.roundRect(-screenW / 2, -screenH / 2, screenW, screenH, r);
+    ctx.stroke();
+
     ctx.restore();
-  }
-
-  function drawLegend(ctx, canvasWidth) {
-    const lx = canvasWidth - 130;
-    const ly = 10;
-    ctx.fillStyle = 'rgba(20,20,25,0.88)';
-    ctx.fillRect(lx - 8, ly - 5, 128, 125);
-
-    ctx.font = 'bold 10px Inter, sans-serif';
-    ctx.fillStyle = '#b3b3b3';
-    ctx.fillText('VEHICLE TYPES', lx, ly + 8);
-
-    ctx.font = '10px Inter, sans-serif';
-    const legend = [
-      [COLORS.bike, 'Bike'],
-      [COLORS.auto, 'Auto Rickshaw'],
-      [COLORS.car, 'Car'],
-      [COLORS.bus, 'Bus'],
-      [COLORS.truck, 'Truck'],
-    ];
-    for (let i = 0; i < legend.length; i++) {
-      ctx.fillStyle = legend[i][0];
-      ctx.fillRect(lx, ly + 16 + i * 18, 12, 12);
-      ctx.fillStyle = '#d2d2d2';
-      ctx.fillText(legend[i][1], lx + 18, ly + 16 + i * 18 + 10);
-    }
   }
 
   // ---- Public methods via ref ----
   const fitView = useCallback(() => {
     hasAutoFit.current = false;
     if (mapData && mapData.roads && mapData.roads.length > 0) {
-      const canvas = canvasRef.current;
       let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
       for (const r of mapData.roads) {
         minX = Math.min(minX, r.startX, r.endX);
@@ -422,13 +433,15 @@ export default function SimulationCanvas({ state, mapData }) {
       }
       const worldW = Math.max(1, (maxX - minX) * 1.1);
       const worldH = Math.max(1, (maxY - minY) * 1.1);
-      const scaleX = canvas.width / worldW;
-      const scaleY = canvas.height / worldH;
+      const cw = cssSize.current.width;
+      const ch = cssSize.current.height;
+      const scaleX = cw / worldW;
+      const scaleY = ch / worldH;
       const scale = Math.min(scaleX, scaleY);
       viewRef.current = {
         scale,
-        offsetX: (canvas.width / scale - (maxX + minX)) / 2,
-        offsetY: (canvas.height / scale - (maxY + minY)) / 2,
+        offsetX: (cw / scale - (maxX + minX)) / 2,
+        offsetY: (ch / scale - (maxY + minY)) / 2,
       };
     }
   }, [mapData]);
@@ -445,12 +458,11 @@ export default function SimulationCanvas({ state, mapData }) {
   return (
     <canvas
       ref={canvasRef}
-      width={1000}
-      height={700}
       id="simulation-canvas"
       style={{
         display: 'block',
-        borderRadius: '8px',
+        width: '100%',
+        height: '100%',
         cursor: dragRef.current.dragging ? 'grabbing' : 'grab',
       }}
     />

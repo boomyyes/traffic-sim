@@ -1,6 +1,7 @@
 package com.traffic.api;
 
 import com.traffic.model.RoadNetwork;
+import com.traffic.model.TrafficSignal;
 import com.traffic.model.Vehicle;
 
 import java.util.ArrayList;
@@ -23,6 +24,7 @@ public class SimulationStateDTO {
     public int busTruckCount;
 
     public List<VehicleDTO> vehicles;
+    public List<SignalStateDTO> signalStates;
 
     // ---- Nested DTOs ----
 
@@ -54,6 +56,11 @@ public class SimulationStateDTO {
         public int id;
         public int roadSegmentId;
         public double stopLineY;
+        public String state;
+    }
+
+    public static class SignalStateDTO {
+        public int id;
         public String state;
     }
 
@@ -98,6 +105,17 @@ public class SimulationStateDTO {
         dto.bikeCount = bikes;
         dto.carAutoCount = carsAutos;
         dto.busTruckCount = busesTrucks;
+
+        // Dynamic signal states (changes every tick)
+        dto.signalStates = new ArrayList<>();
+        if (network != null) {
+            for (TrafficSignal sig : network.getAllSignals()) {
+                SignalStateDTO ss = new SignalStateDTO();
+                ss.id = sig.getId();
+                ss.state = sig.getState().name();
+                dto.signalStates.add(ss);
+            }
+        }
 
         return dto;
     }
