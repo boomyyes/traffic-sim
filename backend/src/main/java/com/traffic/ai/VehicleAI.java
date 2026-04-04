@@ -6,11 +6,10 @@ import com.traffic.model.TrafficSignal;
 import com.traffic.model.Vehicle;
 
 import java.util.List;
-import java.util.Random;
 
 /**
- * Per-vehicle AI with FSM states and personality traits.
- * Each vehicle has independent decision-making with randomized personality.
+ * Per-vehicle AI with FSM states.
+ * Controls state-based driving decisions (cruising, queuing, junction clearing).
  */
 public class VehicleAI {
 
@@ -23,23 +22,13 @@ public class VehicleAI {
         LANE_CHANGING          // Actively executing a lane change
     }
 
-    // ---- Personality Traits ----
-    private final double aggressiveness; // 0.0 (cautious) to 1.0 (aggressive)
-    private final double patience;       // 0.0 (impatient) to 1.0 (patient)
-    private final double laneRespect;    // 0.8 to 1.0 (how well driver respects lane discipline)
-
     // ---- State ----
     private State state = State.CRUISING;
     private double stateTimer = 0;       // Time spent in current state
     private double laneChangeTarget = -1; // Target lateral position during lane change
     private double laneChangeProgress = 0;
 
-    private static final Random rng = new Random();
-
     public VehicleAI() {
-        this.aggressiveness = rng.nextDouble();             // 0.0 - 1.0
-        this.patience = rng.nextDouble();                   // 0.0 - 1.0
-        this.laneRespect = 0.8 + rng.nextDouble() * 0.2;   // 0.8 - 1.0
     }
 
     /**
@@ -103,14 +92,12 @@ public class VehicleAI {
 
         switch (state) {
             case CRUISING:
-                // Aggressive drivers follow closer and accelerate harder
-                accelMod = aggressiveness * 0.5; // Up to +0.5 m/s² bonus
+                accelMod = 0;
                 lateralMod = 1.0;
                 break;
 
             case APPROACHING_JUNCTION:
-                // Slow down somewhat when approaching, cautious drivers more so
-                accelMod = -(1.0 - aggressiveness) * 0.5; // Cautious: -0.5, Aggressive: 0
+                accelMod = -0.3; // Slight slowdown when approaching junction
                 lateralMod = 0.3; // Reduce lateral movement near junction
                 break;
 
@@ -121,7 +108,7 @@ public class VehicleAI {
 
             case COMMITTED:
                 // Must clear junction — maintain speed, no lateral jittering
-                minSpeed = 3.0 + aggressiveness * 4.0; // 3-7 m/s depending on personality
+                minSpeed = 5.0; // Fixed minimum speed to clear junction
                 accelMod = 1.0; // Push through
                 lateralMod = 0.0; // No lane changes in junction
                 break;
@@ -181,28 +168,8 @@ public class VehicleAI {
         return false;
     }
 
-    /**
-     * Get the aggressiveness-adjusted minimum following gap.
-     * Aggressive: 1.0m, Cautious: 3.0m
-     */
-    public double getMinFollowingGap() {
-        return 3.0 - aggressiveness * 2.0;
-    }
-
-    /**
-     * Should this driver run a yellow light?
-     * Aggressive drivers are more likely to.
-     */
-    public boolean shouldRunYellow(double gapToSignal) {
-        // Less likely to run yellow now — only if extremely close (within 5m) and very aggressive
-        return gapToSignal < 5 && rng.nextDouble() < aggressiveness * 0.15;
-    }
-
     // ---- Getters ----
     public State getState() { return state; }
-    public double getAggressiveness() { return aggressiveness; }
-    public double getPatience() { return patience; }
-    public double getLaneRespect() { return laneRespect; }
 
     /**
      * Output from the AI decision.
