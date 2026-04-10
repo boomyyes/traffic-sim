@@ -21,13 +21,6 @@ import java.time.Duration;
 public class OsmFetcher {
 
     private static final String OVERPASS_API = "https://overpass-api.de/api/interpreter";
-    
-    // Default: GS Road, Guwahati (small slice to test)
-    // format: minLat, minLon, maxLat, maxLon
-    private static final double MIN_LAT = 26.135;
-    private static final double MIN_LON = 91.785;
-    private static final double MAX_LAT = 26.155;
-    private static final double MAX_LON = 91.805;
 
     private final HttpClient httpClient;
 
@@ -77,12 +70,5 @@ public class OsmFetcher {
         } else {
             throw new IOException("Failed to download map from Overpass API. HTTP Status: " + response.statusCode());
         }
-    }
-    
-    /**
-     * Download the default Guwahati zone.
-     */
-    public String fetchDefaultGuwahatiMap(String outputPath) throws IOException, InterruptedException {
-        return fetchMapData(MIN_LAT, MIN_LON, MAX_LAT, MAX_LON, outputPath);
     }
 }

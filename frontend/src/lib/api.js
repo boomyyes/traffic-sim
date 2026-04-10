@@ -44,3 +44,4 @@ export async function loadNerulDemo() {
   const res = await fetch(`${API_BASE}/load-nerul`, { method: 'POST' });
   return res.json();
 }
+

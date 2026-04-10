@@ -57,33 +57,19 @@ public class DashboardController {
     private Label roadCountLabel;
     private Label mapNameLabel;
 
-    private final com.traffic.map.OsmFetcher osmFetcher;
-
     public DashboardController(SimulationEngine engine, SimulationConfig config,
             SampleNetworkGenerator networkGenerator,
-            com.traffic.map.MapParser mapParser,
-            com.traffic.map.OsmFetcher osmFetcher) {
+            com.traffic.map.MapParser mapParser) {
         this.engine = engine;
         this.config = config;
         this.networkGenerator = networkGenerator;
         this.mapParser = mapParser;
-        this.osmFetcher = osmFetcher;
     }
 
     public void setupStage(Stage stage) {
         this.primaryStage = stage;
 
-        RoadNetwork network = null;
-        try {
-            // Fetch live map data from Overpass API (default: GS Road, Guwahati)
-            String mapFile = osmFetcher.fetchDefaultGuwahatiMap("guwahati_map.osm");
-            network = mapParser.parseOsmFile(mapFile);
-            System.out.println("✅ Successfully loaded OSM map with " + network.getSegmentCount() + " roads.");
-        } catch (Exception e) {
-            System.err.println("❌ Failed to load OSM map, falling back to sample Network.");
-            e.printStackTrace();
-            network = networkGenerator.generateSampleNetwork();
-        }
+        RoadNetwork network = networkGenerator.generateSampleNetwork();
 
         engine.initialize(network);
 
