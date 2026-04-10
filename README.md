@@ -54,29 +54,6 @@ npm run dev
 
 Then open **http://localhost:3000** in your browser.
 
-## API Endpoints
-
-| Endpoint | Method | Description |
-|---|---|---|
-| `/api/state` | GET | Full simulation snapshot |
-| `/api/start` | POST | Start simulation |
-| `/api/stop` | POST | Pause simulation |
-| `/api/reset` | POST | Reset to sample network |
-| `/api/config` | GET | Simulation config |
-| `/api/upload-osm` | POST | Upload OSM map file |
-| `/api/load-nerul` | POST | Load Nerul demo |
-
-## Controls
-
-| Action | Control |
-|--------|---------|
-| Start simulation | ▶ Start button |
-| Pause | ⏸ Pause button |
-| Reset | 🔄 Reset button |
-| Zoom | Scroll wheel or +/- buttons |
-| Pan | Click and drag |
-| Fit view | 🔍 Fit button |
-| Load map | 📂 Load OSM button |
 
 ## Project Structure
 
